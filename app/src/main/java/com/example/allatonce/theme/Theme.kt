@@ -8,9 +8,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 
 private val DarkColorScheme = darkColorScheme(
-    primary = AmberAccent,
+    primary = ElectricCyan,
     onPrimary = PanelBackground,
-    secondary = SecondaryBlue,
+    secondary = AmberAccent,
     onSecondary = PanelBackground,
     tertiary = GreenActive,
     onTertiary = PanelBackground,
@@ -20,10 +20,10 @@ private val DarkColorScheme = darkColorScheme(
     onBackground = TextPrimary,
     surface = PanelSurface,
     onSurface = TextPrimary,
-    surfaceVariant = PanelBorder,
-    onSurfaceVariant = TextDim,
-    outline = PanelBorder,
-    outlineVariant = BorderDormant
+    surfaceVariant = PanelSurfaceRaised,
+    onSurfaceVariant = TextMedium,
+    outline = PanelBorderCyan,
+    outlineVariant = PanelBorder
 )
 
 private val InstrumentShapes = Shapes(

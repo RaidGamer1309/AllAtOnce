@@ -1,15 +1,22 @@
 package com.example.allatonce.ui.components
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.allatonce.state.PanelMode
@@ -24,42 +31,116 @@ fun ManifestoHeader(
     onStop: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Live pulse animation for telemetry status beacon
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.35f,
+        targetValue = 1.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(850, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "beacon_alpha"
+    )
+
     Surface(
         modifier = modifier.fillMaxWidth(),
         color = PanelSurface,
-        border = BorderStroke(1.dp, PanelBorder),
+        border = BorderStroke(1.dp, PanelBorderCyan),
         shape = MaterialTheme.shapes.small
     ) {
         Column(
-            modifier = Modifier.padding(14.dp),
+            modifier = Modifier.padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "ALL AT ONCE",
-                style = MaterialTheme.typography.displayLarge,
-                color = AmberAccent,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
+            // Header title bar
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "ALLATONCE",
+                    style = MaterialTheme.typography.displaySmall,
+                    color = ElectricCyan
+                )
+                Surface(
+                    color = Color(0x1F00E5FF),
+                    border = BorderStroke(0.5.dp, Color(0x6600E5FF)),
+                    shape = RoundedCornerShape(2.dp)
+                ) {
+                    Text(
+                        text = "RIG v1.0 · 33 CH",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = ElectricCyan,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+            }
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = "DEVICE TELEMETRY & HARDWARE COCKPIT",
+                text = "HARDWARE TELEMETRY & DIAGNOSTIC COCKPIT",
                 style = MaterialTheme.typography.labelSmall,
                 color = TextDim,
-                textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Condensed manifesto points
+            // Stitch Live Status Pulse Banner
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = if (panelMode == PanelMode.LIVE) Color(0xFF0F1A17) else Color(0xFF191612),
+                border = BorderStroke(
+                    1.dp,
+                    if (panelMode == PanelMode.LIVE) Color(0x4D00E676) else Color(0x4DFFB300)
+                ),
+                shape = RoundedCornerShape(2.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // Pulsing beacon dot
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .alpha(if (panelMode == PanelMode.LIVE) pulseAlpha else 1f)
+                                .background(
+                                    if (panelMode == PanelMode.LIVE) GreenActive else AmberAccent,
+                                    CircleShape
+                                )
+                        )
+                        Text(
+                            text = if (panelMode == PanelMode.LIVE) "ALL SENSORS LIVE (33/33)" else "SENSORS STANDBY / PAUSED",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = if (panelMode == PanelMode.LIVE) GreenActive else AmberAccent
+                        )
+                    }
+
+                    Text(
+                        text = if (panelMode == PanelMode.LIVE) "240 Hz SYNC" else "IDLE",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (panelMode == PanelMode.LIVE) ElectricCyan else TextDim
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Concise telemetry principles
             val manifestoPoints = listOf(
-                "One instrument, not forty apps — every module on one screen.",
-                "Simultaneous, not sequential — all hardware reading together.",
-                "Consent is loud — all permissions requested at once.",
-                "Raw numbers over gauges — actual units and real jitter.",
-                "Nothing leaves the device — zero telemetry, zero cloud."
+                "Unified Instrument — 33 physical sensors on one screen.",
+                "Simultaneous Concurrency — hardware polled in parallel.",
+                "Zero Cloud Exfiltration — 100% on-device volatile telemetry."
             )
 
             manifestoPoints.forEach { point ->
@@ -73,9 +154,9 @@ fun ManifestoHeader(
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-            // Loud Permission Banner if permissions needed
+            // Permission Request Banner (if any runtime permissions needed)
             if (!allPermissionsGranted) {
                 Button(
                     onClick = onRequestPermissions,
@@ -86,7 +167,7 @@ fun ManifestoHeader(
                     shape = MaterialTheme.shapes.small,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(48.dp)
+                        .height(44.dp)
                 ) {
                     Text(
                         text = "⚡ GRANT HARDWARE ACCESS (ALL AT ONCE)",
@@ -97,7 +178,7 @@ fun ManifestoHeader(
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            // Master Start / Stop control
+            // Master Telemetry Controls
             when (panelMode) {
                 PanelMode.LIVE -> {
                     Button(
@@ -109,10 +190,10 @@ fun ManifestoHeader(
                         shape = MaterialTheme.shapes.small,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(44.dp)
+                            .height(42.dp)
                     ) {
                         Text(
-                            text = "⏹ STOP ALL SYSTEMS",
+                            text = "⏹ STOP ALL SENSORS",
                             style = MaterialTheme.typography.titleMedium,
                             color = TextPrimary
                         )
@@ -128,10 +209,10 @@ fun ManifestoHeader(
                         shape = MaterialTheme.shapes.small,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(44.dp)
+                            .height(42.dp)
                     ) {
                         Text(
-                            text = "▶ WAKE ALL SYSTEMS",
+                            text = "▶ WAKE ALL SENSORS",
                             style = MaterialTheme.typography.titleMedium,
                             color = PanelBackground
                         )
