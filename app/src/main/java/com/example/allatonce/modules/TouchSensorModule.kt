@@ -9,6 +9,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
@@ -28,18 +29,19 @@ import com.example.allatonce.ui.components.ReadoutValue
 @Composable
 fun TouchSensorModule(panelMode: PanelMode, modifier: Modifier = Modifier) {
     val context = LocalContext.current
+    val config = LocalConfiguration.current
 
     var status by remember { mutableStateOf(ModuleStatus.DORMANT) }
     var maxTouchPoints by remember { mutableIntStateOf(0) }
     var touchScreenType by remember { mutableStateOf("") }
     var displayRefreshRate by remember { mutableFloatStateOf(0f) }
 
-    LaunchedEffect(panelMode) {
+    LaunchedEffect(panelMode, config) {
         if (panelMode == PanelMode.LIVE) {
-            val config = context.resources.configuration
             val pm = context.packageManager
 
             // Touch screen type
+            @Suppress("DEPRECATION")
             touchScreenType = when (config.touchscreen) {
                 Configuration.TOUCHSCREEN_FINGER -> "Capacitive (finger)"
                 Configuration.TOUCHSCREEN_STYLUS -> "Stylus"

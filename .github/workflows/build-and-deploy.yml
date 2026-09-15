@@ -46,6 +46,9 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
       - name: Run Lint
         run: ./gradlew lint
 
@@ -63,15 +66,14 @@ jobs:
           retention-days: 14
 
   # =========================================================================
-  # Job 2: Build Release AAB
+  # Job 2: Build Debug APK (main branch & PRs)
   # =========================================================================
-  build-release:
-    name: 🏗️ Build Release
+  build-debug:
+    name: 📦 Build Debug APK
     needs: lint-and-test
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    # Only build release on develop pushes and version tags
-    if: github.event_name == 'push'
+    if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
 
     steps:
       - name: Checkout code
@@ -85,6 +87,45 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug
+
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-apk
+          path: app/build/outputs/apk/debug/*.apk
+          retention-days: 14
+
+  # =========================================================================
+  # Job 3: Build Release AAB & APK (develop branch & version tags)
+  # =========================================================================
+  build-release:
+    name: 🏗️ Build Release
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: (github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/tags/v')) && secrets.RELEASE_KEYSTORE_BASE64 != ''
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
 
       - name: Decode Release Keystore
         run: |

@@ -17,12 +17,14 @@ import com.example.allatonce.state.ModuleStatus
 import com.example.allatonce.state.PanelMode
 import com.example.allatonce.theme.*
 import com.example.allatonce.ui.components.ModulePanel
+import android.annotation.SuppressLint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.math.log10
 import kotlin.math.sqrt
 
+@SuppressLint("MissingPermission")
 @Composable
 fun MicrophoneModule(
     panelMode: PanelMode,

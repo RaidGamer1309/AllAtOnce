@@ -30,7 +30,7 @@ import java.io.FileReader
  * Monitors internal thermal loads across the SoC, battery, and charging
  * circuitry. Uses multiple data sources:
  * - Android SensorManager for TYPE_TEMPERATURE (device temperature) if available
- * - Thermal zone readings from /sys/class/thermal/thermal_zone*/temp
+ * - Thermal zone readings from /sys/class/thermal/thermal_zone[n]/temp
  *
  * Helps assess whether the device is throttling performance due to heat.
  */
@@ -156,7 +156,7 @@ fun ThermistorModule(panelMode: PanelMode, modifier: Modifier = Modifier) {
 }
 
 /**
- * Reads thermal zone temperatures from /sys/class/thermal/thermal_zone*/
+ * Reads thermal zone temperatures from /sys/class/thermal/thermal_zone[n]/
  * Returns a list of (zone_type, temperature_celsius) pairs.
  */
 private fun readThermalZones(): List<Pair<String, Float>> {
