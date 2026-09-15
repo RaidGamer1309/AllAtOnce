@@ -1,0 +1,174 @@
+# ===========================================================================
+# AllAtOnce — Build & Deploy CI/CD Pipeline
+# ===========================================================================
+# Triggers:
+#   - PR to main         → Lint + Test + Build Debug
+#   - Push to develop     → Lint + Test + Build Release → Firebase App Distribution
+#   - Tag v*              → Lint + Test + Build Release → Google Play Internal Track
+# ===========================================================================
+
+name: Build & Deploy
+
+on:
+  push:
+    branches: [main, develop]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  JAVA_VERSION: '17'
+  JAVA_DISTRIBUTION: 'temurin'
+
+jobs:
+  # =========================================================================
+  # Job 1: Lint & Unit Tests
+  # =========================================================================
+  lint-and-test:
+    name: 🔍 Lint & Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Run Lint
+        run: ./gradlew lint
+
+      - name: Run Unit Tests
+        run: ./gradlew testDebugUnitTest
+
+      - name: Upload Test Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-reports
+          path: |
+            app/build/reports/lint-results-*.html
+            app/build/reports/tests/
+          retention-days: 14
+
+  # =========================================================================
+  # Job 2: Build Release AAB
+  # =========================================================================
+  build-release:
+    name: 🏗️ Build Release
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Only build release on develop pushes and version tags
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Decode Release Keystore
+        run: |
+          echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > app/release.jks
+
+      - name: Create keystore.properties
+        run: |
+          cat > keystore.properties <<EOF
+          storeFile=release.jks
+          storePassword=${{ secrets.KEYSTORE_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS }}
+          keyPassword=${{ secrets.KEY_PASSWORD }}
+          EOF
+
+      - name: Build Release AAB
+        run: ./gradlew bundleRelease
+
+      - name: Build Release APK
+        run: ./gradlew assembleRelease
+
+      - name: Upload Release AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-aab
+          path: app/build/outputs/bundle/release/*.aab
+          retention-days: 30
+
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk
+          path: app/build/outputs/apk/release/*.apk
+          retention-days: 30
+
+  # =========================================================================
+  # Job 3: Deploy to Firebase App Distribution (develop branch)
+  # =========================================================================
+  deploy-firebase:
+    name: 🔥 Deploy to Firebase
+    needs: build-release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.ref == 'refs/heads/develop'
+
+    steps:
+      - name: Download Release APK
+        uses: actions/download-artifact@v4
+        with:
+          name: release-apk
+
+      - name: Upload to Firebase App Distribution
+        uses: wzieba/Firebase-Distribution-Github-Action@v1
+        with:
+          appId: ${{ secrets.FIREBASE_APP_ID }}
+          serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_CREDENTIALS }}
+          groups: internal-testers
+          file: app-release.apk
+          releaseNotes: |
+            Branch: ${{ github.ref_name }}
+            Commit: ${{ github.sha }}
+            Message: ${{ github.event.head_commit.message }}
+
+  # =========================================================================
+  # Job 4: Deploy to Google Play Internal Track (version tags)
+  # =========================================================================
+  deploy-play-store:
+    name: 🚀 Deploy to Play Store
+    needs: build-release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: Download Release AAB
+        uses: actions/download-artifact@v4
+        with:
+          name: release-aab
+
+      - name: Upload to Google Play Internal Track
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT }}
+          packageName: com.example.allatonce  # TODO: Update after package rename
+          releaseFiles: app-release.aab
+          track: internal
+          status: completed
+          releaseName: ${{ github.ref_name }}

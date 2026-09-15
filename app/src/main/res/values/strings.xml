@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">All At Once</string>
+    <string name="app_description">Live hardware instrument panel and telemetry cockpit</string>
+</resources>
