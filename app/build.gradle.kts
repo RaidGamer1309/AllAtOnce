@@ -52,9 +52,10 @@ android {
         }
         create("staging") {
             applicationIdSuffix = ".staging"
-            isDebuggable = true
+            isDebuggable = false
             isMinifyEnabled = true
             isShrinkResources = true
+            matchingFallbacks += listOf("release")
             signingConfig = if (keystorePropertiesFile.exists()) {
                 signingConfigs.getByName("release")
             } else {
@@ -156,4 +157,7 @@ dependencies {
 
   // Biometric
   implementation(libs.androidx.biometric)
+
+  // Nothing Phone Glyph SDK
+  implementation(files("libs/glyph-matrix-sdk-2.0.aar"))
 }

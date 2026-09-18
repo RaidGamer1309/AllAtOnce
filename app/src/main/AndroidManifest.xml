@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Allow minSdk 26 while Nothing SDK specifies minSdk 33 -->
+    <uses-sdk tools:overrideLibrary="com.nothing.thirdparty" />
+
+    <!-- Nothing Glyph Interface permission -->
+    <uses-permission android:name="com.nothing.ketchum.permission.ENABLE" />
 
     <!-- Sensor permissions -->
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
@@ -64,6 +71,9 @@
         android:supportsRtl="true"
         android:windowSoftInputMode="adjustResize"
         android:theme="@style/Theme.AllAtOnce">
+        <meta-data
+            android:name="NothingKey"
+            android:value="test" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

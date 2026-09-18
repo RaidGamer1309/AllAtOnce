@@ -47,23 +47,25 @@ fun MicrophoneModule(
                         AudioFormat.CHANNEL_IN_MONO,
                         AudioFormat.ENCODING_PCM_16BIT
                     )
-                    audioRecord = AudioRecord(
+                    val record = AudioRecord(
                         MediaRecorder.AudioSource.MIC,
                         sampleRate,
                         AudioFormat.CHANNEL_IN_MONO,
                         AudioFormat.ENCODING_PCM_16BIT,
                         bufSize
                     )
-                    if (audioRecord?.state != AudioRecord.STATE_INITIALIZED) {
+                    audioRecord = record
+                    if (record.state != AudioRecord.STATE_INITIALIZED) {
                         status = ModuleStatus.ERROR
                         return@launch
                     }
-                    audioRecord?.startRecording()
+                    record.startRecording()
                     status = ModuleStatus.LIVE
                     val buffer = ShortArray(bufSize / 2)
 
                     while (isActive) {
-                        val read = audioRecord?.read(buffer, 0, buffer.size) ?: break
+                        val read = record.read(buffer, 0, buffer.size)
+                        if (read <= 0) break
                         if (read > 0) {
                             var sumSquares = 0.0
                             var peak = 0

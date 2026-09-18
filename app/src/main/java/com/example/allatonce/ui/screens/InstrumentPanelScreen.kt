@@ -168,6 +168,7 @@ fun InstrumentPanelScreen(
                     modifier = Modifier.weight(1f)
                 )
             }
+            GlyphLightModule(panelMode = panelMode)
             MicrophoneModule(
                 panelMode = panelMode,
                 hasPermission = hasPermission(Manifest.permission.RECORD_AUDIO)

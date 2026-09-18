@@ -85,6 +85,14 @@
 -dontwarn com.google.accompanist.**
 
 # ---------------------------------------------------------------------------
+# Nothing Phone Glyph SDK
+# ---------------------------------------------------------------------------
+-keep class com.nothing.** { *; }
+-keep class com.nothinglondon.** { *; }
+-dontwarn com.nothing.**
+-dontwarn com.nothinglondon.**
+
+# ---------------------------------------------------------------------------
 # Coroutines
 # ---------------------------------------------------------------------------
 -keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
